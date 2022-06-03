@@ -13,7 +13,7 @@
 - Pikseli.bmp
 - deleted
 - PavlinUs
-- strange
+- Pixel mania
 - NephlimDeath
 - MaksWellFox
 - Leyok
