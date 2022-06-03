@@ -10,7 +10,7 @@
 - KusSv
 - GumPix
 - M'Arts
-- Магические кости
+- Pikseli.bmp
 - deleted
 - PavlinUs
 - strange
