@@ -1,7 +1,7 @@
-href = 'https://wmgcat.itch.io/wiztopia';
-nmap = Map.init(11, 11);
-zoom = 2;
+href = 'https://231877.github.io/gdcollab';
+nmap = Map.init(16, 16);
 grid_size = 16;
+zoom = 2;
 pause = editor = false;
 
 let colours = {
@@ -24,11 +24,9 @@ playerControl = {
 	'init': false, 'power': 0,
 	'power_timer': 180, 'levelup': 0,
 	'goto': {
-		'active': false,
-		'alpha': 0,
-		'speed': .05,
-		'spr': Img.init('tileset', 48, 16, 16, 16, 0, 0, 1)
-	}
+		'active': false, 'alpha': 0,
+		'speed': .05, 'spr': Img.init('tileset', 96, 48, 16, 16, 0, 0, 12)
+	}, 'start': true
 };
 
 let player = Obj.init('player');
@@ -46,6 +44,20 @@ item.image_index.frame_spd = 0;
 let finish = Obj.init('finish');
 finish.open = false;
 let spawn = Obj.init('spawn');
+
+let autors = {
+	'Cakeoo': Img.init('tileset', 0, 0, grid_size, grid_size, 0, 0, 1),
+	'KusSv': Img.init('tileset', 64, 48, grid_size, grid_size, 0, 0, 1),
+	'GumPix': Img.init('tileset', 64, 0, grid_size, grid_size, 0, 0, 1),
+	'Магические кости': Img.init('tileset', 64, 16, grid_size, grid_size, 0, 0, 1),
+	'deleted': Img.init('tileset', 80, 48, grid_size, grid_size, 0, 0, 1),
+	'PavlinUs': Img.init('tileset', 0, 16, grid_size, grid_size, 0, 0, 1),
+	'strange': Img.init('tileset', 0, 32, grid_size, grid_size, 0, 0, 3),
+	'NephlimDeath': Img.init('tileset', 80, 32, grid_size, grid_size, 0, 0, 31),
+	'Leyok': Img.init('tileset', 16, 16, grid_size, grid_size, 0, 0, 1),
+	'MothApostle': Img.init('tileset', 32, 16, grid_size, grid_size, 0, 0, 1),
+	"M'Arts": Img.init('tileset', 96, 48, grid_size, grid_size, 0, 0, 12)
+};
 
 Level.init('./lvls/ground.txt', nmap, true);
 
@@ -68,13 +80,9 @@ let canvas = Add.canvas('g', function(t) {
 		}
 		obj.update = function() {
 			let hspd = Eng.sign(Byte.check('right') - Byte.check('left')), vspd = Eng.sign(Byte.check('down') - Byte.check('up')),
-				speed = playerControl.speed * (1 + .5 * (obj.undeath != false));
-			hspd *= speed * (vspd == 0);
-			vspd *= speed * (hspd == 0);
-			let dir = Eng.todeg(Eng.direction(0, 0, hspd, vspd));
-			if (dir != obj.dir && (hspd || vspd)) {
-				obj.dir = dir;
-			}
+				speed = playerControl.speed * (1 + .5 * (obj.undeath != false)), score = {};
+			hspd *= speed * (vspd == 0) * !obj.death;
+			vspd *= speed * (hspd == 0) * !obj.death;
 			if (hspd != 0 && (((obj.x + hspd) <= 0 && hspd < 0) || ((obj.x + grid_size + hspd) >= (nmap.w) * grid_size && hspd > 0))) obj.x = (obj.x + hspd <= 0) * (nmap.w - 1) * grid_size;
 			if (vspd != 0 && (((obj.y + vspd) <= 0 && vspd < 0) || ((obj.y + grid_size + vspd) >= (nmap.h) * grid_size && vspd > 0))) obj.y = (obj.y + vspd <= 0) * (nmap.h - 1) * grid_size;
 			if (obj.checkwall(hspd + grid_size * (hspd > 0), 0, hspd, 0, speed)) hspd = 0;
@@ -89,16 +97,14 @@ let canvas = Add.canvas('g', function(t) {
 				obj.x = xcell;
 				obj.y = ycell;
 			}
-			// items:
+			// столкновение:
 			Search.distance(['item', 'enemy', 'finish'], obj.x + grid_size * .5, obj.y + grid_size * .5, grid_size * .5, grid_size * .5).forEach(function(nobj) {
 				switch(nobj.name) {
 					case 'item':
 						switch(nobj.type) {
 							case 'key':
 								if (!nobj.hidden) {
-									playerControl.score += 10;
-									playerControl.power += 10;
-									playerControl.levelup += 10;
+									score = {'score': 10, 'power': 10, 'levelup': 10};
 									nobj.hidden = true;
 									emitter({
 										'image_index': Img.init('tileset', 80, 8, 8, 8, 4, 4, 2),
@@ -110,8 +116,7 @@ let canvas = Add.canvas('g', function(t) {
 							break;
 							case 'power':
 								if (!obj.undeath) obj.undeath = Timer.init(playerControl.power_timer);
-								playerControl.score += 25;
-								playerControl.levelup += 25;
+								score = { 'score': 25, 'levelup': 25 };
 								nobj.destroy();
 								emitter({
 									'image_index': Img.init('tileset', 80, 0, 8, 8, 4, 4, 1),
@@ -121,9 +126,8 @@ let canvas = Add.canvas('g', function(t) {
 								}, nobj.x + grid_size * .5, nobj.y + grid_size * .5, grid_size, grid_size * .5);
 							break;
 							case 'life':
-								playerControl.score += 10;
-								playerControl.power += 10;
-								playerControl.life++;
+								score = { 'score': 10, 'power': 10 };
+								playerControl.life = Math.min(playerControl.life + 1, 3);
 								nobj.destroy();
 								emitter({
 									'image_index': Img.init('tileset', 88, 0, 8, 8, 4, 4, 1),
@@ -133,22 +137,12 @@ let canvas = Add.canvas('g', function(t) {
 								}, nobj.x + grid_size * .5, nobj.y + grid_size * .5, grid_size, grid_size * .5);
 							break;
 						}
+						
 					break;
 					case 'enemy':
 						if (!obj.undeath) {
 							if (!pause) {
-								obj.x = obj.spawn_x;
-								obj.y = obj.spawn_y;
-								Search.search('enemy').forEach(function(enemy) {
-									enemy.x = enemy.spawn_x;
-									enemy.y = enemy.spawn_y;
-									enemy.path = undefined;
-								});
-								Search.type('item', 'key').forEach(function(item) { item.hidden = false; });
-								Search.search('finish').forEach(function(door) { door.open = false; });
-								playerControl.life--;
-								playerControl.init = true;
-								pause = true;
+								obj.death = true;
 								Byte.clear();
 							}
 						} else { // режим бессмертия:
@@ -156,8 +150,7 @@ let canvas = Add.canvas('g', function(t) {
 							nobj.x = random.x;
 							nobj.y = random.y;
 							nobj.path = undefined;
-							playerControl.score += 25;
-							playerControl.levelup += 25;
+							score = { 'score': 25, 'levelup': 25 };
 						}
 					break;
 					case 'finish':
@@ -168,6 +161,36 @@ let canvas = Add.canvas('g', function(t) {
 					break;
 				}
 			});
+			Object.keys(score).forEach(function(e) { playerControl[e] += score[e]; });
+			if (obj.death) { // смерть:
+				if (!obj.death_timer) {
+					obj.death_timer = Timer.init(25);
+					obj.xx = Math.random() * 10 - 5;
+				} else {
+					if (obj.death_timer.check(true)) {
+						obj.death_timer = obj.death = false;
+						obj.yy = undefined;
+						obj.x = obj.spawn_x;
+						obj.y = obj.spawn_y;
+						Search.search('enemy').forEach(function(enemy) {
+							enemy.x = enemy.spawn_x;
+							enemy.y = enemy.spawn_y;
+							enemy.path = undefined;
+						});
+						Search.type('item', 'key').forEach(function(item) { item.hidden = false; });
+						Search.search('finish').forEach(function(door) { door.open = false; });
+						playerControl.life--;
+						playerControl.init = pause = true;
+					} else {
+						cameraes[current_camera].x += Math.random() * 4 - 2;
+						cameraes[current_camera].y += Math.random() * 4 - 2;
+						if (obj.yy == undefined) obj.yy = -5;
+						obj.yy += 1.2;
+						obj.x += obj.xx;
+						obj.y += Math.min(obj.yy, 10);
+					}
+				}
+			}
 			// появление дополнительных жизней и усилителя:
 			if (playerControl.power >= 60) {
 				let spawns = Search.search('spawn'), random = spawns[Math.floor(Math.random() * spawns.length)];
@@ -210,40 +233,32 @@ let canvas = Add.canvas('g', function(t) {
 			return true
 		}
 		obj.draw(function(cvs) {
-			let view = true;
-			if (obj.undeath && obj.undeath.delta() <= .4) {
-				if (Math.floor(obj.undeath.delta() * 100 % 4) == 0) view = false;
-			}
-			if (view) obj.image_index.draw(cvs, obj.x + grid_size * .5, obj.y + grid_size * .5, undefined, undefined, 1, 1, 1, obj.dir);
+			let view = !(obj.undeath && obj.undeath.delta() <= .4 && Math.floor(obj.undeath.delta() * 100 % 4) == 0);
+			if (view) obj.image_index.draw(cvs, obj.x + grid_size * .5, obj.y + grid_size * .5, undefined, undefined, 1, 1, 1);
 		});
 	});
 	Search.search('enemy').forEach(function(obj) {
 		obj.initialize = function() {
+			let assoc = {
+				1: { 'left': 0, 'top': 32, 'frame': 3, 'speed': .4, 'frame_spd': .2 },
+				2: { 'left': 64, 'top': 16, 'speed': .8 },
+				3: { 'left': 80, 'top': 16, 'speed': .5 },
+				4: { 'left': 80, 'top': 16, 'speed': 1 },
+				5: { 'left': 80, 'top': 32, 'frame': 31, 'frame_spd': .25 },
+				6: { 'left': 80, 'top': 16, 'speed': 1 },
+			}
+			if (assoc[obj.type]) {
+				obj.image_index = Img.init('tileset', assoc[obj.type].left || 0, assoc[obj.type].top || 0, grid_size, grid_size, 0, 0, assoc[obj.type].frame || 1);
+				obj.image_index.frame_spd = assoc[obj.type].frame_spd || 0;
+				obj.speed = assoc[obj.type].speed || 1;
+				if (obj.type == 5) {
+					obj.delta = 100;
+					obj.respawn = false;
+					obj.timer = Timer.init(obj.delta);
+				}
+			}
 			obj.spawn_x = obj.x;
 			obj.spawn_y = obj.y;
-			switch(obj.type) {
-				case 1:
-					obj.image_index = Img.init('tileset', 0, 32, grid_size, grid_size, 0, 0, 3);
-					obj.image_index.frame_spd = .2;
-					obj.speed = .4;
-				break;
-				case 2:
-					obj.image_index = Img.init('tileset', 64, 16, grid_size, grid_size, 0, 0, 1);
-					obj.speed = .8;
-				break;
-				case 3:
-					obj.image_index = Img.init('tileset', 80, 16, grid_size, grid_size, 0, 0, 1);
-					obj.speed = .5;
-				break;
-				case 4:
-					obj.image_index = Img.init('tileset', 80, 16, grid_size, grid_size, 0, 0, 1);
-					obj.speed = 1;
-				break;
-				case 5:
-					obj.image_index = Img.init('tileset', 80, 16, grid_size, grid_size, 0, 0, 1);
-					obj.speed = .25;
-				break;
-			}
 		}
 		obj.update = function() {
 			if (playerControl.id) {
@@ -264,11 +279,35 @@ let canvas = Add.canvas('g', function(t) {
 								obj.y += Eng.sign(obj.path[obj.select][1] * grid_size - obj.y) * obj.speed;
 								obj.select = obj.path.length - 1;
 							break;
+							case 4:
+
+							break;
+							case 5:
+								if (obj.timer.check()) {
+									if (!obj.respawn) {
+										let spawns = Search.search('spawn'), random = spawns[Math.floor(Math.random() * spawns.length)];
+										obj.nx = random.x;
+										obj.ny = random.y;
+									} else {
+										obj.x = obj.nx;
+										obj.y = obj.ny;
+									}
+									obj.respawn =! obj.respawn;
+								}
+								if (obj.respawn && Math.random() <= .1)
+									emitter({
+										'image_index': Img.init('tileset', 96, 0, 8, 8, 4, 4, 2),
+										'alpha': 1, 'is_life': true,
+										'life': 30, 'angle_start': 0, 'angle_end': 359,
+										'spd': .25, 'yr': obj.y + 1
+									}, obj.nx + grid_size * .5, obj.ny + grid_size * .5, 2, grid_size * .5);
+							break;
+							case 6:
+
+							break;
 						}
 						if (Eng.distance(obj.x, obj.y, obj.path[obj.select][0] * grid_size, obj.path[obj.select][1] * grid_size) <= 2) obj.select++;
-					} else {
-						obj.path = undefined;
-					}
+					} else obj.path = undefined;
 				}
 			}
 		}
@@ -276,38 +315,23 @@ let canvas = Add.canvas('g', function(t) {
 			if (!editor && obj.image_index) obj.image_index.draw(cvs, obj.x, obj.y);
 		});
 	});
-	Search.search('item').forEach(function(obj) {
+	Search.search('item').forEach(function(obj) { // предметы:
 		obj.initialize = function() {
 			obj.image_index = Img.init('tileset', 0, grid_size, grid_size, grid_size, 0, 0, 4);
-			switch(obj.type) {
-				case 'key':
-					obj.image_index.frame = 0;
-				break;
-				case 'power':
-					obj.image_index.frame = 2;
-					obj.timer = Timer.init(250);
-				break;
-				case 'life':
-					obj.image_index.frame = 1;
-					obj.timer = Timer.init(250);
-				break;
-			}
+			let assoc = {'key': 0, 'power': 2, 'life': 1};
+			obj.image_index.frame = assoc[obj.type] || 0;
 			obj.image_index.frame_spd = 0;
+			if (obj.type == 'power' || obj.type == 'life') obj.timer = Timer.init(250);
 		}
 		obj.update = function() {
-			switch(obj.type) {
-				case 'power':
-					case 'life':
-						if (obj.timer) {
-							if (obj.timer.check(true)) obj.destroy();
-							else {
-								if (obj.timer.delta() <= .4) {
-									if (Math.floor(obj.timer.delta() * 100 % 4) == 0) obj.hidden = true;
-									else obj.hidden = false;
-								}
-							}
-						}
-				break;
+			if ((obj.type == 'power' || obj.type == 'life') && obj.timer) {
+				if (obj.timer.check(true)) obj.destroy();
+				else {
+					if (obj.timer.delta() <= .4) {
+						if (Math.floor(obj.timer.delta() * 100 % 4) == 0) obj.hidden = true;
+						else obj.hidden = false;
+					} 
+				}
 			}
 		}
 		obj.draw(function(cvs) {
@@ -316,15 +340,15 @@ let canvas = Add.canvas('g', function(t) {
 	});
 	Search.search('finish').forEach(function(obj) {
 		obj.initialize = function() {
-			pause = true;
-			playerControl.init = true;
 			let id = Add.object('player', obj.x, obj.y);
+			playerControl.init = pause = true;
 			playerControl.id = id;
 			obj.image_index = Img.init('tileset', 64, 0, grid_size, grid_size, 0, 0, 1);
 		}
 		obj.update = function() {
-			let items = Search.type('item', 'key'), count = items.length;
-			items.forEach(function(item) { if (item.hidden) count--; });
+			if (!obj.items) obj.items = Search.type('item', 'key');
+			let count = obj.items.length;
+			obj.items.forEach(function(item) { if (item.hidden) count--; });
 			obj.open = !count;
 			if (obj.open != obj.save_open) {
 				if (obj.open)
@@ -339,11 +363,6 @@ let canvas = Add.canvas('g', function(t) {
 		}
 		obj.draw(function(cvs) {
 			if (obj.open && !playerControl.init) obj.image_index.draw(cvs, obj.x, obj.y);
-		});
-	});
-	Search.search('spawn').forEach(function(obj) {
-		obj.draw(function(cvs) {
-			if (editor) gr.circle(obj.x + grid_size * .5, obj.y + grid_size * .5, grid_size * .5, colours.green);
 		});
 	});
 	Search.search('$part').forEach(function(obj) { obj.draw(obj); });
@@ -366,7 +385,7 @@ let canvas = Add.canvas('g', function(t) {
 	else {
 		if (playerControl.life <= 0) {
 			pause = true;
-			add_gui(function(cvs) {
+			add_gui(function(cvs) { // game over:
 				gr.rect(0, 0, canvas.id.width, canvas.id.height, colours.black);
 				gr.text('game over', canvas.id.width * .5, canvas.id.height * .5, colours.red, 1, 24 * zoom, 'wpixel', 'fill', 'center-bottom');
 				gr.text('score: ' + scoreboard(playerControl.score), canvas.id.width * .5, canvas.id.height * .5, colours.yellow, 1, 18 * zoom, 'wpixel', 'fill', 'center-top')
@@ -383,10 +402,31 @@ let canvas = Add.canvas('g', function(t) {
 			if (Math.abs(playerControl.vscore - playerControl.score) <= .2) playerControl.vscore = playerControl.score;
 			gr.text('score: ' + scoreboard(Math.floor(playerControl.vscore)), nmap.w * grid_size, -grid_size * .5 - 4, colours[(playerControl.vscore == playerControl.score && !is_undeath) ? 'white' : 'yellow'], 1, 18, 'wpixel', 'fill', 'right-middle');
 			if (pause && playerControl.init) {
-				if (Math.floor((t * .005) % 4) >= 1) gr.text('press any key to start', nmap.w * grid_size * .5, nmap.h * grid_size + 4, colours.yellow, 1, 18, 'wpixel', 'fill', 'center-top');
-				if (Byte.key != 0) {
-					pause = false;
-					playerControl.init = false;
+				if (!playerControl.start) {
+					if (Math.floor((t * .005) % 4) >= 1) gr.text('press enter to run', nmap.w * grid_size * .5, nmap.h * grid_size + 4, colours.yellow, 1, 18, 'wpixel', 'fill', 'center-top');
+					if (Byte.key != 0) {
+						pause = false;
+						playerControl.init = false;
+					}
+				} else {
+					add_gui(function(cvs) { // main menu:
+						let scale = canvas.id.width / 800;
+						gr.rect(0, 0, canvas.id.width, canvas.id.height, colours.black);
+						gr.text('gdcollab-game!', canvas.id.width * .5, canvas.id.height * .25, colours.yellow, 1, Math.floor(20 * zoom * scale), 'wpixel', 'fill', 'center-bottom');
+						let count = 5, size = grid_size * 5 * zoom * scale, rautors = Object.keys(autors), xx = (canvas.id.width - Math.floor(rautors.length / count) * size) * .5;
+						for (let i = 0; i < rautors.length; i++) {
+							let nx = xx + size * Math.floor(i / count), ny = canvas.id.height * .3 + (i % count) * grid_size * zoom * scale * 1.1;
+							let l = gr.text(rautors[i], nx, ny, colours.white, 1, Math.floor(8 * zoom * scale), 'wpixel', 'fill', 'center-middle');
+							let img_size = grid_size * zoom * scale;
+							autors[rautors[i]].draw(cvs, nx - l * .5 - img_size * 1.5, ny - img_size * .5, img_size, img_size);
+							autors[rautors[i]].frame_spd = .25;
+						}
+						if (Math.floor((t * .005) % 4) >= 1) gr.text('press enter to start!', canvas.id.width * .5, canvas.id.height * .75, colours.yellow, 1, Math.floor(14 * zoom * scale), 'wpixel', 'fill', 'center-top');
+						if (Byte.check('mode')) {
+							playerControl.start = false;
+							Byte.clear();
+						}
+					});
 				}
 			}
 		}
@@ -404,9 +444,10 @@ let canvas = Add.canvas('g', function(t) {
 				}
 			}
 		}
+		// переход между уровнями:
 		playerControl.goto.alpha = Eng.clamp(playerControl.goto.alpha + playerControl.goto.speed * (playerControl.goto.active - !playerControl.goto.active), 0, 1);
 		add_gui(function(cvs) {
-			if (playerControl.goto.alpha > 0)
+			if (playerControl.goto.alpha > 0) {
 				if (playerControl.goto.active) {
 					for (let i = 0; i < Math.floor(nmap.w * playerControl.goto.alpha); i++) {
 						for (let j = 0; j < nmap.h; j++)
@@ -418,7 +459,8 @@ let canvas = Add.canvas('g', function(t) {
 							playerControl.goto.spr.draw(cvs, canvas.id.width * .5 - (nmap.w * grid_size) * zoom * .5 + (grid_size * zoom) * i, canvas.id.height * .5 - (nmap.h * grid_size) * zoom * .5 + (grid_size * zoom) * j, undefined, undefined, 1, zoom, zoom);
 					}
 				}
-				
+				playerControl.goto.spr.frame_spd = .25 / (nmap.w * nmap.h);
+			}
 		});
 	}
 }, function(a, t) {
