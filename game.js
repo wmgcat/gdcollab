@@ -107,7 +107,7 @@ let canvas = Add.canvas('g', function(t) {
 					case 'item':
 						switch(nobj.type) {
 							case 'key':
-								if (!nobj.hidden) {
+								if (!nobj.hidden && !obj.death) {
 									score = {'score': 10, 'power': 10, 'levelup': 10};
 									nobj.hidden = true;
 									emitter({
@@ -149,6 +149,7 @@ let canvas = Add.canvas('g', function(t) {
 						if (!obj.undeath) {
 							if (!pause) {
 								obj.death = true;
+								playerControl.death = true;
 								Byte.clear();
 							}
 						} else { // режим бессмертия:
@@ -282,7 +283,7 @@ let canvas = Add.canvas('g', function(t) {
 					obj.initialize();
 				}
 			}
-			if (playerControl.id) {
+			if (playerControl.id && !playerControl.death) {
 				if (!obj.path) {
 					obj.path = nmap.path(Math.floor((obj.x + grid_size * .5) / grid_size), Math.floor((obj.y + grid_size * .5) / grid_size), Math.floor((playerControl.id.x + grid_size * .5) / grid_size), Math.floor((playerControl.id.y + grid_size * .5) / grid_size));
 					obj.select = 1;
@@ -466,6 +467,7 @@ let canvas = Add.canvas('g', function(t) {
 						if (Byte.key != 0) {
 							pause = false;
 							playerControl.init = false;
+							playerControl.death = false;
 						}
 					} else {
 						add_gui(function(cvs) { // main menu:
