@@ -6,7 +6,6 @@
 # участники коллаба:
 - Cakeoo
 - MothApostle
-- FukurO
 - KusSv
 - GumPix
 - M'Arts
@@ -18,4 +17,3 @@
 - MaksWellFox
 - Leyok
 - Jajablocko
-- Marganec
