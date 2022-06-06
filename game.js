@@ -85,21 +85,23 @@ let canvas = Add.canvas('g', function(t) {
 		obj.update = function() {
 			let hspd = Eng.sign(Byte.check('right') - Byte.check('left')), vspd = Eng.sign(Byte.check('down') - Byte.check('up')),
 				speed = playerControl.speed * (1 + .5 * (obj.undeath != false)), score = {};
-			hspd *= speed * (vspd == 0) * !obj.death;
-			vspd *= speed * (hspd == 0) * !obj.death;
-			if (hspd != 0 && (((obj.x + hspd) <= 0 && hspd < 0) || ((obj.x + grid_size + hspd) >= (nmap.w) * grid_size && hspd > 0))) obj.x = (obj.x + hspd <= 0) * (nmap.w - 1) * grid_size;
-			if (vspd != 0 && (((obj.y + vspd) <= 0 && vspd < 0) || ((obj.y + grid_size + vspd) >= (nmap.h) * grid_size && vspd > 0))) obj.y = (obj.y + vspd <= 0) * (nmap.h - 1) * grid_size;
-			if (obj.checkwall(hspd + grid_size * (hspd > 0), 0, hspd, 0, speed)) hspd = 0;
-			if (obj.checkwall(hspd + grid_size * (hspd > 0), grid_size - speed, hspd, 1, speed)) hspd = 0;
-			if (obj.checkwall(0, vspd + grid_size * (vspd > 0), 0, vspd, speed)) vspd = 0;
-			if (obj.checkwall(grid_size - speed, vspd + grid_size * (vspd > 0), 1, vspd, speed)) vspd = 0;
-			let xcell = Math.floor((obj.x + grid_size * .5 + hspd * grid_size) / grid_size) * grid_size,
-				ycell = Math.floor((obj.y + grid_size * .5 + vspd * grid_size) / grid_size) * grid_size;
-			obj.x += Eng.sign(xcell - obj.x) * speed;
-			obj.y += Eng.sign(ycell - obj.y) * speed;
-			if (Eng.distance(obj.x, obj.y, xcell, ycell) <= speed) {	
-				obj.x = xcell;
-				obj.y = ycell;
+			if (!obj.death) {
+				hspd *= speed * (vspd == 0) * !obj.death;
+				vspd *= speed * (hspd == 0) * !obj.death;
+				if (hspd != 0 && (((obj.x + hspd) <= 0 && hspd < 0) || ((obj.x + grid_size + hspd) >= (nmap.w) * grid_size && hspd > 0))) obj.x = (obj.x + hspd <= 0) * (nmap.w - 1) * grid_size;
+				if (vspd != 0 && (((obj.y + vspd) <= 0 && vspd < 0) || ((obj.y + grid_size + vspd) >= (nmap.h) * grid_size && vspd > 0))) obj.y = (obj.y + vspd <= 0) * (nmap.h - 1) * grid_size;
+				if (obj.checkwall(hspd + grid_size * (hspd > 0), 0, hspd, 0, speed)) hspd = 0;
+				if (obj.checkwall(hspd + grid_size * (hspd > 0), grid_size - speed, hspd, 1, speed)) hspd = 0;
+				if (obj.checkwall(0, vspd + grid_size * (vspd > 0), 0, vspd, speed)) vspd = 0;
+				if (obj.checkwall(grid_size - speed, vspd + grid_size * (vspd > 0), 1, vspd, speed)) vspd = 0;
+				let xcell = Math.floor((obj.x + grid_size * .5 + hspd * grid_size) / grid_size) * grid_size,
+					ycell = Math.floor((obj.y + grid_size * .5 + vspd * grid_size) / grid_size) * grid_size;
+				obj.x += Eng.sign(xcell - obj.x) * speed;
+				obj.y += Eng.sign(ycell - obj.y) * speed;
+				if (Eng.distance(obj.x, obj.y, xcell, ycell) <= speed) {	
+					obj.x = xcell;
+					obj.y = ycell;
+				}
 			}
 			// столкновение:
 			Search.distance(['item', 'enemy', 'finish'], obj.x + grid_size * .5, obj.y + grid_size * .5, grid_size * .5, grid_size * .5).forEach(function(nobj) {
