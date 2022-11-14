@@ -1,5 +1,5 @@
 # gdcollab
-- ссылка на игру: https://231877.github.io/gdcollab
+- ссылка на игру: https://wmgcat.github.io/gdcollab
 - жанр: аркада
 - описание: в разработке
 
